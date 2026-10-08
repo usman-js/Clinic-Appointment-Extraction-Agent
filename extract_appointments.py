@@ -1,11 +1,13 @@
+from urllib import response
+
 from dotenv import load_dotenv
 load_dotenv()
 
-from anthropic import Anthropic
+from google import genai
 
 from schemas import Appointment
 
-client = Anthropic()
+client = genai.Client()
 
 SYSTEM = """You read messages sent to a clinic and fill in an appointment form.
 
@@ -31,7 +33,7 @@ Use exactly this format:
 If the message is unclear, mentions pain, emergency, or symptoms,
 set needs_human_review to true so a staff member handles it.
 
-- TODO: If the massage is not in English, translate it to English.
+- TODO: If the massage is not in English, translate it to English. please never any urdu or other languages.
 
 """
 
@@ -42,17 +44,24 @@ MESSAGES = [
     "hi i have a rash on my arm, want skin doctor on saturday. hamza 0333 5551234",
     "Can I book something for Friday?",
     "hey im usman i wanna see a doctor on monday, can you do it for me? i have a headache",
-    "asalam o alikum, mera name usman hy, meri tabiyat kharab hai, mujhe doctor ki zarurat hai. mera number 0345-9876543",
+    "asalam o alikum, mera name usman hy, meri tabiyat kharab hai, mujhe doctor ki zarurat hai my kal sham me askata hu. mera number 0345-9876543",
     # TODO: add 2 messages of your own. One of them must be missing some information.
 ]
 
 for number, message in enumerate(MESSAGES, start=1):
-    # TODO: send `message` to Claude, with your SYSTEM rules and the Appointment form.
-    # Hint: copy the client.messages.parse(...) call from day2/05_structured_claude.py
-    appointment = None
+    response = client.models.generate_content(
+        model="gemini-3.5-flash-lite",
+        contents=f"{SYSTEM}\n\nMessage:\n{message}",
+        config={
+            "response_mime_type": "application/json",
+            "response_schema": Appointment,
+        },
+    )
+
+    appointment = response.parsed
 
     if appointment is None:
-        print("Not finished yet: complete the TODO inside the loop.")
+        print("No structured response returned.")
         break
 
     print(f"Message {number}: {message}")
